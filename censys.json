@@ -1,6 +1,6 @@
 {
     "appid": "97C8DF6F-C870-4482-B6CA-B6C31745FBAB",
-    "name": "Censys",
+    "name": "Censys V3",
     "description": "This app implements investigative actions to get information from the Censys search engine",
     "publisher": "Splunk",
     "type": "information",
@@ -21,18 +21,11 @@
     ],
     "license": "Copyright (c) 2016-2025 Splunk Inc.",
     "configuration": {
-        "api_id": {
-            "description": "API ID",
-            "data_type": "password",
-            "order": 0,
-            "required": true
-        },
-        "secret": {
-            "description": "Secret",
-            "data_type": "password",
-            "order": 1,
-            "required": true
-        }
+        "personal_access_token": {
+        "type": "password",
+        "description": "Censys Personal Access Token",
+        "required": true
+    }
     },
     "actions": [
         {

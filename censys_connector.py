@@ -39,7 +39,7 @@ class CensysConnector(BaseConnector):
         self.save_progress("Testing connectivity")
 
         ret_val, _ = make_rest_call(
-            "/api/v1/account",
+            "/global/asset/host/8.8.8.8",
             action_result,
             self.get_config(),
             method="get",
@@ -54,15 +54,16 @@ class CensysConnector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Connectivity test passed")
 
     def _handle_lookup(self, query, dataset, action_result):
-        req_method, api = CENSYS_API_METHOD_MAP["info"]
-
-        api_url = api.format(dataset=dataset, value=query)
+        if dataset == "hosts":
+            api_url = f"/global/asset/host/{query}"
+        else:
+            api_url = f"/global/asset/certificate/{query}"
 
         ret_val, response = make_rest_call(
             api_url,
             action_result,
             self.get_config(),
-            method=req_method,
+            method="get",
         )
 
         if phantom.is_fail(ret_val):
@@ -101,7 +102,9 @@ class CensysConnector(BaseConnector):
 
         action_result = self.add_action_result(ActionResult(param))
         summary_data = action_result.update_summary({})
-        req_method, endpoint = CENSYS_API_METHOD_MAP["info"]
+
+        endpoint = f"/global/asset/host/{ip}"
+
         ip = param[CENSYS_JSON_IP]
         if not is_ip(ip):
             return action_result.set_status(
@@ -109,10 +112,10 @@ class CensysConnector(BaseConnector):
                 "Please provide a valid value in the 'ip' action parameter",
             )
         ret_val, response = make_rest_call(
-            endpoint.format(dataset=CENSYS_QUERY_HOSTS_DATASET, value=ip),
+            endpoint,
             action_result,
             self.get_config(),
-            method=req_method,
+            method="get",
         )
 
         if phantom.is_fail(ret_val):
@@ -141,7 +144,6 @@ class CensysConnector(BaseConnector):
         ret_val, response = CensysSearch(self.get_config()).query_dataset(
             action_result,
             summary_data,
-            CENSYS_QUERY_HOSTS_DATASET,
             param,
             CENSYS_QUERY_IP_DATA_PER_PAGE,
         )
@@ -168,7 +170,7 @@ class CensysConnector(BaseConnector):
             return ret_val
 
         # summary
-        parsed = response.get("parsed", {})
+        parsed = response.get("result", {}).get("certificate", {})
 
         if parsed:
             summary = {}
@@ -204,7 +206,6 @@ class CensysConnector(BaseConnector):
         ret_val, response = CensysSearch(self.get_config()).query_dataset(
             action_result,
             summary_data,
-            CENSYS_QUERY_CERTIFICATE_DATASET,
             param,
             CENSYS_QUERY_CERTIFICATE_DATA_PER_PAGE,
         )

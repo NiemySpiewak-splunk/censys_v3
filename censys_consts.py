@@ -12,21 +12,22 @@
 # the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
 # either express or implied. See the License for the specific language governing permissions
 # and limitations under the License.
-CENSYS_API_URL = "https://search.censys.io"
-CENSYS_API_METHOD_MAP = {
-    "info": ("get", "/api/v2/{dataset}/{value}"),
-    "search": ("get", "/api/v2/{dataset}/search?q={q}&per_page={per_page}"),
-}
+CENSYS_API_URL = "https://api.platform.censys.io/v3"
+CENSYS_TOKEN = "personal_access_token"
+# CENSYS_API_METHOD_MAP = {
+#     "info": ("get", "/api/v2/{dataset}/{value}"),
+#     "search": ("get", "/api/v2/{dataset}/search?q={q}&per_page={per_page}"),
+# }
 
-CENSYS_JSON_API_ID = "api_id"
-CENSYS_JSON_SECRET = "secret"  # pragma: allowlist secret
+# CENSYS_JSON_API_ID = "api_id"
+# CENSYS_JSON_SECRET = "secret"  # pragma: allowlist secret
 CENSYS_JSON_SHA256 = "sha256"
 CENSYS_JSON_IP = "ip"
 CENSYS_JSON_DOMAIN = "domain"
 CENSYS_NO_INFO = "No information found about the queried item"
-CENSYS_JSON_DATASET = "dataset"
+#CENSYS_JSON_DATASET = "dataset"
 CENSYS_JSON_QUERY = "query"
-CENSYS_QUERY_IP_DATASET = "ipv4"
+#CENSYS_QUERY_IP_DATASET = "ipv4"
 CENSYS_QUERY_IP_DATA_PER_PAGE = 100
 CENSYS_QUERY_CERTIFICATE_DATA_PER_PAGE = 100
 CENSYS_QUERY_CERTIFICATE_MAX_LIMIT = 25000
