@@ -14,7 +14,7 @@
 # and limitations under the License.
 import phantom.app as phantom
 
-from censys_consts import CENSYS_API_METHOD_MAP, CENSYS_JSON_QUERY, CENSYS_LIMIT_KEY
+from censys_consts import CENSYS_JSON_QUERY, CENSYS_LIMIT_KEY
 from censys_rest import make_rest_call
 from censys_validation import validate_integer, validate_is_positive
 
@@ -22,7 +22,6 @@ from censys_validation import validate_integer, validate_is_positive
 class CensysSearch:
     def __init__(self, app_config) -> None:
         self.app_config = app_config
-        #self._req_method, self._endpoint = CENSYS_API_METHOD_MAP["search"]
 
     def query_dataset(self, action_result, summary_data, param, per_page):
         """Search Censys using the given query string in the Censys search language. censys_io_dataset specifies

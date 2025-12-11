@@ -14,10 +14,6 @@
 # and limitations under the License.
 CENSYS_API_URL = "https://api.platform.censys.io/v3"
 CENSYS_TOKEN = "personal_access_token"
-# CENSYS_API_METHOD_MAP = {
-#     "info": ("get", "/api/v2/{dataset}/{value}"),
-#     "search": ("get", "/api/v2/{dataset}/search?q={q}&per_page={per_page}"),
-# }
 
 # CENSYS_JSON_API_ID = "api_id"
 # CENSYS_JSON_SECRET = "secret"  # pragma: allowlist secret
