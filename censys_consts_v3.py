@@ -1,4 +1,4 @@
-# File: censys_consts.py
+# File: censys_consts_v3.py
 #
 # Copyright (c) 2016-2025 Splunk Inc.
 #
@@ -14,6 +14,7 @@
 # and limitations under the License.
 CENSYS_API_URL = "https://api.platform.censys.io/v3"
 CENSYS_TOKEN = "personal_access_token"
+ORG_ID = "organization_id"
 
 # CENSYS_JSON_API_ID = "api_id"
 # CENSYS_JSON_SECRET = "secret"  # pragma: allowlist secret

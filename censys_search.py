@@ -14,7 +14,7 @@
 # and limitations under the License.
 import phantom.app as phantom
 
-from censys_consts import CENSYS_JSON_QUERY, CENSYS_LIMIT_KEY
+from censys_consts_v3 import CENSYS_JSON_QUERY, CENSYS_LIMIT_KEY
 from censys_rest import make_rest_call
 from censys_validation import validate_integer, validate_is_positive
 
@@ -61,8 +61,7 @@ class CensysSearch:
         # next = self._get_next(response)
         #total = self._get_total(response)
 
-        data_left = limit - fetched
-        while next_token and data_left > 0:
+        while next_token and fetched < limit:
             payload = {
                 "page_token": next_token
             }
@@ -91,31 +90,3 @@ class CensysSearch:
         summary_data["total_available_records"] = response.get("total", "NA")
         return action_result.set_status(phantom.APP_SUCCESS), response
 
-    # def _search_call(self, action_result, dataset, q, per_page, limit, cursor=""):
-    #     cursor_q = "" if cursor == "" else f"&cursor={cursor}"
-    #     endpoint_url = self._endpoint.format(dataset=dataset, q=q, per_page=min(limit, per_page))
-    #     return make_rest_call(
-    #         f"{endpoint_url}{cursor_q}",
-    #         action_result,
-    #         self.app_config,
-    #         method=self._req_method,
-    #     )
-
-    # def _check_datapath(self, datadict):
-    #     for i in datadict:
-    #         if "." in i:
-    #             datadict[i.replace(".", "_")] = datadict[i]
-    #             del datadict[i]
-    #     return datadict
-
-    # @staticmethod
-    # def _get_hits(response):
-    #     return response.get("result", {}).get("hits")
-
-    # @staticmethod
-    # def _get_next(response):
-    #     return response.get("result", {}).get("links", {}).get("next")
-
-    # @staticmethod
-    # def _get_total(response):
-    #     return response.get("result", {}).get("total")

@@ -15,16 +15,20 @@
 import phantom.app as phantom
 import requests
 
-from censys_consts import CENSYS_TOKEN, CENSYS_API_URL, CENSYS_ERR_JSON_DECODE
+from censys_consts_v3 import CENSYS_TOKEN, CENSYS_API_URL, CENSYS_ERR_JSON_DECODE, ORG_ID
 from censys_validation import get_error_message_from_exception
 
 def make_rest_call(endpoint, action_result, config, data=None, method="post"):
     token = config[CENSYS_TOKEN]
+    org_id = config.get(ORG_ID)
 
     request_func = getattr(requests, method)
 
     url = f"{CENSYS_API_URL}{endpoint}"
     headers = {"Authorization": f"Bearer {token}","Content-type": "application/json"}
+
+    if org_id:
+        headers["X-Organization-ID"] = org_id
 
     try:
         response = request_func(

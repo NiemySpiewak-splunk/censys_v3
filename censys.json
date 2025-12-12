@@ -26,6 +26,12 @@
         "data_type": "string",
         "required": true,
         "description": "Censys Personal Access Token"
+    },
+    "organization_id": {
+        "type": "string",
+        "data_type": "string",
+        "required": false,
+        "description": "Optional Censys Organization ID (required for Search API)"
     }
     },
     "actions": [
