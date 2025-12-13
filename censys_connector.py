@@ -257,15 +257,74 @@ class CensysConnector(BaseConnector):
 
         resource = response.get("result", {}).get("resource", {})
 
-        normalized = {
-            "status": "OK",
-            "result": resource
+        # --- legacy wrapper required by SOAR view ---
+        legacy = {}
+        legacy["result"] = {}
+        legacy_result = legacy["result"]
+
+        legacy_result["domain"] = resource.get("hostname")
+
+        asn = resource.get("network", {}).get("autonomous_system", {})
+        legacy_result["autonomous_system"] = {
+            "asn": asn.get("asn"),
+            "name": asn.get("name"),
+            "description": asn.get("description"),
+            "country_code": asn.get("country_code"),
+            "routed_prefix": asn.get("bgp_prefix")
         }
 
-        action_result.add_data(normalized)
+        loc = resource.get("location", {})
+        legacy_result["location"] = {
+            "city": loc.get("city"),
+            "continent": loc.get("continent"),
+            "country": loc.get("country"),
+            "country_code": loc.get("country_code"),
+            "latitude": loc.get("coordinates", {}).get("latitude"),
+            "longitude": loc.get("coordinates", {}).get("longitude"),
+            "postal_code": loc.get("postal_code"),
+            "province": loc.get("province"),
+            "timezone": loc.get("timezone"),
+        }
 
-        self.debug_print("Exiting _lookup_domain")
-        return action_result.set_status(phantom.APP_SUCCESS)
+        ports = []
+        endpoints = resource.get("endpoints", [])
+
+        for ep in endpoints:
+            port_entry = {
+                "port": ep.get("port")
+            }
+
+            tls = ep.get("tls", {})
+            cert = tls.get("certificate", {})
+            parsed = cert.get("parsed", {})
+
+            port_entry["https"] = {
+                "tls": {
+                    "certificate": {
+                        "parsed": parsed
+                    }
+                }
+            }
+
+            http = ep.get("http", {})
+            port_entry["http"] = {
+                "get": {
+                    "status_code": http.get("status_code"),
+                    "title": http.get("html_title"),
+                    "body": http.get("body"),
+                }
+            }
+
+            ports.append(port_entry)
+
+            legacy_result["ports"] = ports
+
+            legacy_result["tags"] = resource.get("labels", [])
+            legacy_result["protocols"] = resource.get("protocols", [])
+
+            action_result.add_data(legacy)
+
+            return action_result.set_status(phantom.APP_SUCCESS)
 
     def _query_domain(self, param):
         """Use handle_search to query the correct dataset with the query string"""
