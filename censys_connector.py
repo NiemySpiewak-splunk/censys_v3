@@ -21,7 +21,7 @@ import requests
 from phantom.action_result import ActionResult
 from phantom.base_connector import BaseConnector
 
-from censys_consts import *
+from censys_consts_v3 import *
 from censys_rest import make_rest_call
 from censys_search import CensysSearch
 from censys_validation import is_ip
@@ -37,9 +37,8 @@ class CensysConnector(BaseConnector):
 
         action_result = self.add_action_result(ActionResult(dict(param)))
         self.save_progress("Testing connectivity")
-
         ret_val, _ = make_rest_call(
-            "/api/v1/account",
+            "/global/asset/host/8.8.8.8",
             action_result,
             self.get_config(),
             method="get",
@@ -54,15 +53,16 @@ class CensysConnector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Connectivity test passed")
 
     def _handle_lookup(self, query, dataset, action_result):
-        req_method, api = CENSYS_API_METHOD_MAP["info"]
-
-        api_url = api.format(dataset=dataset, value=query)
+        if dataset == "hosts":
+            api_url = f"/global/asset/host/{query}"
+        else:
+            api_url = f"/global/asset/certificate/{query}"
 
         ret_val, response = make_rest_call(
             api_url,
             action_result,
             self.get_config(),
-            method=req_method,
+            method="get",
         )
 
         if phantom.is_fail(ret_val):
@@ -101,32 +101,41 @@ class CensysConnector(BaseConnector):
 
         action_result = self.add_action_result(ActionResult(param))
         summary_data = action_result.update_summary({})
-        req_method, endpoint = CENSYS_API_METHOD_MAP["info"]
         ip = param[CENSYS_JSON_IP]
+        endpoint = f"/global/asset/host/{ip}"
+
         if not is_ip(ip):
             return action_result.set_status(
                 phantom.APP_ERROR,
                 "Please provide a valid value in the 'ip' action parameter",
             )
         ret_val, response = make_rest_call(
-            endpoint.format(dataset=CENSYS_QUERY_HOSTS_DATASET, value=ip),
+            endpoint,
             action_result,
             self.get_config(),
-            method=req_method,
+            method="get",
         )
 
         if phantom.is_fail(ret_val):
             return action_result.get_status()
+        
+        resource = response.get("result", {}).get("resource", {})
 
-        if not response.get("result", {}).get("services"):
-            return action_result.set_status(phantom.APP_SUCCESS, CENSYS_NO_INFO)
+        normalized = {
+        "status": "OK",
+        "result": resource}
 
-        summary_data["port"] = response.get("result", {}).get("services", [])[0].get("port")
-        summary_data["service_name"] = response.get("result", {}).get("services", [])[0].get("service_name")
+        services = resource.get("services", [])
 
-        action_result.add_data(response)
 
-        self._update_summary(action_result, response)
+        if services:
+            first = services[0]
+            summary_data["port"] = first.get("port")
+            summary_data["service_name"] = first.get("service_name")
+
+        action_result.add_data(normalized)
+
+        self._update_summary(action_result, normalized["result"])
 
         self.debug_print("Exiting _lookup_ip")
 
@@ -141,7 +150,6 @@ class CensysConnector(BaseConnector):
         ret_val, response = CensysSearch(self.get_config()).query_dataset(
             action_result,
             summary_data,
-            CENSYS_QUERY_HOSTS_DATASET,
             param,
             CENSYS_QUERY_IP_DATA_PER_PAGE,
         )
@@ -204,7 +212,6 @@ class CensysConnector(BaseConnector):
         ret_val, response = CensysSearch(self.get_config()).query_dataset(
             action_result,
             summary_data,
-            CENSYS_QUERY_CERTIFICATE_DATASET,
             param,
             CENSYS_QUERY_CERTIFICATE_DATA_PER_PAGE,
         )
@@ -234,9 +241,90 @@ class CensysConnector(BaseConnector):
 
         action_result = self.add_action_result(ActionResult(param))
 
-        self.debug_print("Exiting _lookup_domain")
+        domain = param.get("domain")
 
-        return action_result.set_status(phantom.APP_ERROR, "This action is not yet supported by Censys in API v2")
+        web_id = f"{domain}:443"
+
+        ret_val, response = make_rest_call(
+            f"/global/asset/webproperty/{web_id}",
+            action_result,
+            self.get_config(),
+            method="get"
+        )
+
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        resource = response.get("result", {}).get("resource", {})
+
+        # --- legacy wrapper required by SOAR view ---
+        legacy = {}
+        legacy["result"] = {}
+        legacy_result = legacy["result"]
+
+        legacy_result["domain"] = resource.get("hostname")
+
+        asn = resource.get("network", {}).get("autonomous_system", {})
+        legacy_result["autonomous_system"] = {
+            "asn": asn.get("asn"),
+            "name": asn.get("name"),
+            "description": asn.get("description"),
+            "country_code": asn.get("country_code"),
+            "routed_prefix": asn.get("bgp_prefix")
+        }
+
+        loc = resource.get("location", {})
+        legacy_result["location"] = {
+            "city": loc.get("city"),
+            "continent": loc.get("continent"),
+            "country": loc.get("country"),
+            "country_code": loc.get("country_code"),
+            "latitude": loc.get("coordinates", {}).get("latitude"),
+            "longitude": loc.get("coordinates", {}).get("longitude"),
+            "postal_code": loc.get("postal_code"),
+            "province": loc.get("province"),
+            "timezone": loc.get("timezone"),
+        }
+
+        ports = []
+        endpoints = resource.get("endpoints", [])
+
+        for ep in endpoints:
+            port_entry = {
+                "port": ep.get("port")
+            }
+
+            tls = ep.get("tls", {})
+            cert = tls.get("certificate", {})
+            parsed = cert.get("parsed", {})
+
+            port_entry["https"] = {
+                "tls": {
+                    "certificate": {
+                        "parsed": parsed
+                    }
+                }
+            }
+
+            http = ep.get("http", {})
+            port_entry["http"] = {
+                "get": {
+                    "status_code": http.get("status_code"),
+                    "title": http.get("html_title"),
+                    "body": http.get("body"),
+                }
+            }
+
+            ports.append(port_entry)
+
+            legacy_result["ports"] = ports
+
+            legacy_result["tags"] = resource.get("labels", [])
+            legacy_result["protocols"] = resource.get("protocols", [])
+
+            action_result.add_data(legacy)
+
+            return action_result.set_status(phantom.APP_SUCCESS)
 
     def _query_domain(self, param):
         """Use handle_search to query the correct dataset with the query string"""
@@ -244,10 +332,20 @@ class CensysConnector(BaseConnector):
         self.debug_print("Entering _query_domain")
 
         action_result = self.add_action_result(ActionResult(param))
+        summary_data = action_result.update_summary({})
 
+        ret_val, response = CensysSearch(self.get_config()).query_dataset(
+        action_result,
+        summary_data,
+        param,
+        CENSYS_QUERY_DOMAIN_DATA_PER_PAGE,
+    )
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+        
         self.debug_print("Exiting _query_domain")
 
-        return action_result.set_status(phantom.APP_ERROR, "This action is not yet supported by Censys in API v2")
+        return action_result.set_status(phantom.APP_SUCCESS)
 
     def handle_action(self, param):
         action = self.get_action_identifier()

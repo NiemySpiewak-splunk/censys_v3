@@ -16,7 +16,7 @@ import ipaddress
 
 import phantom.app as phantom
 
-from censys_consts import CENSYS_ERR_MSG_UNAVAILABLE, CENSYS_INT_ERR_MSG
+from censys_consts_v3 import CENSYS_ERR_MSG_UNAVAILABLE, CENSYS_INT_ERR_MSG
 
 
 def get_error_message_from_exception(e):
