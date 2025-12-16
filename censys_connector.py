@@ -332,10 +332,20 @@ class CensysConnector(BaseConnector):
         self.debug_print("Entering _query_domain")
 
         action_result = self.add_action_result(ActionResult(param))
+        summary_data = action_result.update_summary({})
 
+        ret_val, response = CensysSearch(self.get_config()).query_dataset(
+        action_result,
+        summary_data,
+        param,
+        CENSYS_QUERY_DOMAIN_DATA_PER_PAGE,
+    )
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+        
         self.debug_print("Exiting _query_domain")
 
-        return action_result.set_status(phantom.APP_ERROR, "This action is not yet supported by Censys in API v2")
+        return action_result.set_status(phantom.APP_SUCCESS)
 
     def handle_action(self, param):
         action = self.get_action_identifier()
